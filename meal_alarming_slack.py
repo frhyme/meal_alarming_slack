@@ -1,6 +1,8 @@
 import pandas as pd
 import datetime as dt
 import requests
+import time
+from slacker import Slacker
 
 def read_table_as_dataframe_from_url(url):
     r = requests.get(url)
@@ -75,6 +77,31 @@ faculty_meal_url="http://fd.postech.ac.kr/bbs/board_menu.php?bo_table=weekly&sca
 student_meal_df = read_student_meal_from_df( read_table_as_dataframe_from_url(student_meal_url) )
 faculty_meal_df = read_faculty_meal_from_df( read_table_as_dataframe_from_url(faculty_meal_url) )
 
+token = open("../legacy_token.txt", "r").read().strip()
+slack = Slacker(token)
+target_channel="#test_channel"
+
+while True:
+	now_datetime = dt.datetime.now() + dt.timedelta(hours=9)
+	if now_datetime.hour== 14 and now_datetime.minute==45 and now_datetime.second==0:
+		if now_datetime.date() in student_meal_df.index:
+			output_str = "학생식당 점심: " + student_meal_df["lunch"][now_datetime.date()]
+			slack.chat.post_message(target_channel, output_str) 
+		if now_datetime.date() in faculty_meal_df.index:
+			output_str = "교직원식당 점심: " + faculty_meal_df["lunch"][now_datetime.date()]
+			slack.chat.post_message(target_channel, output_str) 
+		time.sleep(60*60*4)
+	elif now_datetime.hour == 17 and now_datetime.minute==0 and now_datetime.second==0:
+		if now_datetime.date() in student_meal_df.index:
+			output_str = "학생식당 저녁: " + student_meal_df["dinner"][now_datetime.date()]
+			slack.chat.post_message(target_channel, output_str) 
+		if now_datetime.date() in faculty_meal_df.index:			
+			output_str = "교직원식당 저녁: " + faculty_meal_df["dinner"][now_datetime.date()]
+			slack.chat.post_message(target_channel, output_str) 
+		time.sleep(60*60*18)
+
+"""
+
 if dt.date.today() in student_meal_df.index:
     print("breakfast", student_meal_df["breakfast"][dt.date.today()])
 else:
@@ -84,3 +111,4 @@ if dt.date.today() in faculty_meal_df.index:
     print("breakfast", faculty_meal_df["lunch"][dt.date.today()])
 else:
     print("not yet uploaded")
+"""
